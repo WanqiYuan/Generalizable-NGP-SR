@@ -72,7 +72,6 @@
   <link rel="preconnect" href="https://documentcloud.adobe.com">
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
-
   <!-- TODO: Replace with your paper title and authors -->
   <title>PAPER_TITLE - AUTHOR_NAMES | Academic Research</title>
   
@@ -258,7 +257,6 @@
 </head>
 <body>
 
-
   <!-- Scroll to Top Button -->
   <button class="scroll-to-top" onclick="scrollToTop()" title="Scroll to top" aria-label="Scroll to top">
     <i class="fas fa-chevron-up"></i>
@@ -443,26 +441,33 @@
 </section>
 <!-- End video comparison sliders -->
 
+<!-- Compare on Blender -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">compareonblender</h2>
+    <div class="columns is-centered">
+      <div class="column is-10">
+        <video controls muted playsinline loop preload="metadata" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.12); background:#000;">
+          <source src="static/videos/compare_on_blender.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
+  </div>
+</section>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<!-- Compare on DTU -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">compare on dtu</h2>
+    <div class="columns is-centered">
+      <div class="column is-10">
+        <video controls muted playsinline loop preload="metadata" style="width:100%; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,0.12); background:#000;">
+          <source src="static/videos/compare_on_dtu.mp4" type="video/mp4">
+        </video>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!--BibTex citation -->
 <!--
@@ -497,7 +502,7 @@
         <div class="content">
 
           <p>
-            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
             You are free to borrow the source code of this website, we just ask that you link back to this page in the footer. <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
             Commons Attribution-ShareAlike 4.0 International License</a>.
           </p>
@@ -562,12 +567,17 @@
           if (started) return;
           started = true;
 
-          // Attempt to align at the same time origin (best effort)
-          try { vA.currentTime = 0; vB.currentTime = 0; } catch (e) {}
-
-          // Ensure both are playing (autoplay may already do it; this helps on stricter browsers)
+          // Do NOT reset currentTime here. We only try to play (autoplay may be blocked until user gesture).
           try { await vA.play(); } catch (e) {}
           try { await vB.play(); } catch (e) {}
+
+          // If one video started earlier than the other, softly align once at start (best effort).
+          try {
+            if (isFinite(vA.currentTime) && isFinite(vB.currentTime)) {
+              const dt0 = vA.currentTime - vB.currentTime;
+              if (Math.abs(dt0) > 0.2) vB.currentTime = vA.currentTime;
+            }
+          } catch (e) {}
 
           // Light time-sync loop (keeps them close without visible jumps)
           if (!syncing) {
@@ -633,5 +643,5 @@
   </script>
 
 </body>
-  </html>
+</html>
 
