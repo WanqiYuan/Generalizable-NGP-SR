@@ -454,7 +454,6 @@
         const bar = root.querySelector(".vcmp-bar");
 
         let dragging = false;
-        let started = false;
         let syncing = false;
 
         function setX(clientX) {
@@ -465,53 +464,44 @@
           bar.style.left = `${pct}%`;
         }
 
-        async function startPlayback() {
-          if (started) return;
-          started = true;
+        function startSync() {
+          if (syncing) return;
+          syncing = true;
+          const THRESH = 0.05;
 
-          try { await vA.play(); } catch (e) {}
-          try { await vB.play(); } catch (e) {}
-
-          try {
-            if (isFinite(vA.currentTime) && isFinite(vB.currentTime)) {
-              const dt0 = vA.currentTime - vB.currentTime;
-              if (Math.abs(dt0) > 0.05) vB.currentTime = vA.currentTime;
-            }
-          } catch (e) {}
-
-          if (!syncing) {
-            syncing = true;
-            const THRESH = 0.05;
-
-            // Hard sync on every frame
-            const tick = () => {
-              if (!started) { syncing = false; return; }
-              if (vA.readyState < 2 || vB.readyState < 2) {
-                requestAnimationFrame(tick);
-                return;
-              }
-              const dt = Math.abs(vA.currentTime - vB.currentTime);
-              if (dt > THRESH) {
-                try { vB.currentTime = vA.currentTime; } catch (e) {}
-              }
+          const tick = () => {
+            if (vA.readyState < 2 || vB.readyState < 2) {
               requestAnimationFrame(tick);
-            };
-            requestAnimationFrame(tick);
-          }
+              return;
+            }
+            // If vA paused, pause vB too
+            if (vA.paused && !vB.paused) { try { vB.pause(); } catch(e){} }
+            if (!vA.paused && vB.paused) { try { vB.play(); } catch(e){} }
 
-          // Also sync when vA loops back to start
-          vA.addEventListener("seeked", () => {
-            try { vB.currentTime = vA.currentTime; } catch (e) {}
-          });
-          vA.addEventListener("playing", () => {
-            try { vB.currentTime = vA.currentTime; } catch (e) {}
-          });
+            const dt = Math.abs(vA.currentTime - vB.currentTime);
+            if (dt > THRESH) {
+              try { vB.currentTime = vA.currentTime; } catch (e) {}
+            }
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
         }
+
+        // Sync on loop restart
+        vA.addEventListener("seeked", () => {
+          try { vB.currentTime = vA.currentTime; } catch (e) {}
+        });
+
+        // Start sync as soon as either video begins playing (autoplay)
+        vA.addEventListener("playing", startSync);
+        vB.addEventListener("playing", startSync);
+
+        // Also try to kick off sync immediately
+        startSync();
 
         root.addEventListener("pointerdown", (e) => {
           dragging = true;
           root.setPointerCapture(e.pointerId);
-          startPlayback();
           setX(e.clientX);
         });
         root.addEventListener("pointermove", (e) => {
@@ -520,7 +510,6 @@
         });
         root.addEventListener("pointerup", () => { dragging = false; });
         root.addEventListener("pointercancel", () => { dragging = false; });
-        root.addEventListener("click", () => startPlayback(), { passive: true });
 
         requestAnimationFrame(() => {
           const r = root.getBoundingClientRect();
